@@ -21,4 +21,23 @@ class Weather extends Model
         'lat',
         'description'
     ];
+
+    /**
+     * @param $data
+     */
+    public static function createCurrentWeather($data)
+    {
+        Weather::create([
+            'city_name' => $data['name'],
+            'wind_speed' => $data['wind']['speed'],
+            'humidity' => $data['main']['humidity'],
+            'pressure' => $data['main']['pressure'],
+            'temp' => $data['main']['temp'],
+            'temp_min' => $data['main']['temp_min'],
+            'temp_max' => $data['main']['temp_max'],
+            'lon' => $data['coord']['lon'],
+            'lat' => $data['coord']['lat'],
+            'description' => $data['weather'][0]['description'],
+        ]);
+    }
 }

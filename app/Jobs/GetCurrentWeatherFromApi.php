@@ -1,36 +1,42 @@
 <?php
 
-namespace App\Http\Controllers\V1\Weather;
+namespace App\Jobs;
 
-use App\Http\Controllers\ApiController;
-use App\Http\Resources\CurrentWeatherCollection;
-use App\Http\Resources\CurrentWeatherResource;
 use App\Models\Weather;
 use App\UseCases\OpenWeatherMap;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
-class WeatherController extends ApiController
+class GetCurrentWeatherFromApi implements ShouldQueue
 {
-    public function index()
-    {
-        $current_weather = Weather::latest()->get();
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-        return $this->responseOk(
-            new CurrentWeatherCollection($current_weather)
-        );
+    /**
+     * Create a new job instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        //
     }
 
     /**
-     * Get current weather from api and insert to database.
+     * Execute the job.
      *
-     * @return JsonResponse
+     * @return void
      * @throws \Exception
      */
-    public function store(): JsonResponse
+    public function handle()
     {
         foreach (OpenWeatherMap::CITIES as $city) {
+            dump($city);
             try {
                 DB::beginTransaction();
 
@@ -47,7 +53,5 @@ class WeatherController extends ApiController
 
             DB::commit();
         }
-
-        return response()->json(Weather::all());
     }
 }
