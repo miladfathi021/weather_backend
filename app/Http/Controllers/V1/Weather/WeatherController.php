@@ -6,6 +6,8 @@ use App\Http\Controllers\ApiController;
 use App\Http\Resources\CurrentWeatherCollection;
 use App\Http\Resources\CurrentWeatherResource;
 use App\Models\Weather;
+use App\UseCases\OpenWeatherMap;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
@@ -23,40 +25,24 @@ class WeatherController extends ApiController
     /**
      * Get current weather from api and insert to database.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
+     * @throws \Exception
      */
-    public function store()
+    public function store(): JsonResponse
     {
-        $cities = ['Madrid', 'Barcelona'];
-        $appId = '79c06f01f69f3f8a9cb88a7949c4a6d5';
-
-        foreach ($cities as $city) {
+        foreach (OpenWeatherMap::CITIES as $city) {
             try {
                 DB::beginTransaction();
 
-            $result = Http::get(
-                'http://api.openweathermap.org/data/2.5/weather?q=' . $city . '&units=metric&appid=' . $appId
-            );
-
-            $data = $result->json();
+                $result = Http::get(OpenWeatherMap::url($city));
 
                 if ($result->successful()) {
-                    Weather::create([
-                        'city_name' => $data['name'],
-                        'wind_speed' => $data['wind']['speed'],
-                        'humidity' => $data['main']['humidity'],
-                        'pressure' => $data['main']['pressure'],
-                        'temp' => $data['main']['temp'],
-                        'temp_min' => $data['main']['temp_min'],
-                        'temp_max' => $data['main']['temp_max'],
-                        'lon' => $data['coord']['lon'],
-                        'lat' => $data['coord']['lat'],
-                        'description' => $data['weather'][0]['description'],
-                    ]);
+                    Weather::createCurrentWeather($result->json());
                 }
+
             } catch (\Exception $e) {
                 DB::rollBack();
-                dd($e);
+                throw new \Exception();
             }
 
             DB::commit();
